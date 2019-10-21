@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Vue.js</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+<div id="app">
+  <div class="container">
+    
+    <div class="row">
+      <div class="col-md-12">
+        
+          <div class="form-inline form-group">            
+            <input type="text" class="form-control" name="txaRandomThinkInput" v-model="newItem" />
+            <button class="btn btn-primary" v-on:click="addItem">Add</button>
+          </div>
+          <p>{{inputSuccess}}</p>
+      </div>
+    </div>
+  
+    <div id="todo">
+      <ol>
+        <todo-item v-for="(item,index) in todos" v-bind:todo="item" v-bind:key="index" v-on:click.native="removeItem(index)"></todo-item>
+      </ol>  
+    </div>  
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+ <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/5.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/5.11.0/firebase-firestore.js"></script>
+<!-- <script type="text/javascript">
+  var intv;
+  var c = 100;  
+  function myFunction() {
+    intv = setInterval(clearScreen, 5000);
+  }
+  function clearScreen() {
+    var o = c/100;
+    $("#app").css('opacity', o);
+    c--;
+    if (c < 0) { 
+      alert("Pay first, use later :)");     
+      c = 100;
+      reset();
+    }
+  }
+  function reset(){    
+    $("input,select").val('');
+  }
+  myFunction(c);
+</script> -->
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+<script type="text/javascript">
+var config = {
+  messagingSenderId: "...",
+  apiKey: "AIzaSyC88iDXp9fuygWx6gdk4klb8hsKrif9a-E",
+  authDomain: "flutterdemo-e4bc0.firebaseapp.com",
+  databaseURL: "https://flutterdemo-e4bc0.firebaseio.com",
+  projectId: "flutterdemo-e4bc0",
+  storageBucket: "flutterdemo-e4bc0.appspot.com",
+  messagingSenderId: "786038223148",
+  appId: "1:786038223148:web:0422ec70ffe16366"
+
+};
+  
+var app = firebase.initializeApp(config);
+var db = app.firestore();
+
+Vue.component('todo-item',{
+  template: '<li>{{todo.title}}</li>',
+  props: ['todo']
+});
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    listID: 0,
+    newItem: '',
+    inputSuccess: '',
+    todos: []
+  },
+  mounted(){
+    db.collection('randomthing').where("status","==",2)
+    // .onSnapshot(function(querySnapshot) {
+    //     var cities = [];
+    //     querySnapshot.forEach(function(doc) {
+    //         cities.push(doc.data().thething);
+    //     });
+    //     console.log("Current cities in CA: ", cities.join(", "));
+    // });
+
+    .onSnapshot((querySnapshot) => {
+        this.todos = [];
+        querySnapshot.forEach((doc) => {
+          this.todos.push({
+            'id': [doc.id],
+            'title': doc.data().thething
+          });
+      });
+    });
+  },
+  methods: {
+    addItem: function(){      
+      db.collection("randomthing").add({          
+          thething: this.newItem,
+          createAt: db.collection("randomthing").thime
+      })
+      .then(function(docRef) {
+          this.inputSuccess = "Document written with ID: ", docRef.id
+      })
+      .catch(function(error) {
+          alert("Error adding document: ", error);
+      });
+
+      this.newItem = '';
+    },
+    removeItem: function(key){      
+      this.todos.splice(key,1);
+    },
+    
+  }
+})
+</script>
+</html>
