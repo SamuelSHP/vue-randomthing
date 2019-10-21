@@ -4,12 +4,12 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<title>Vue.js</title>
+	<title>Firestore To-Do-List</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
 </head>
 <body>
 <div id="app">
-  <div class="container">
+  <div class="container mt-100">
     
     <div class="row">
       <div class="col-md-12">
@@ -90,15 +90,7 @@ var app = new Vue({
     todos: []
   },
   mounted(){
-    db.collection('randomthing').where("status","==",2)
-    // .onSnapshot(function(querySnapshot) {
-    //     var cities = [];
-    //     querySnapshot.forEach(function(doc) {
-    //         cities.push(doc.data().thething);
-    //     });
-    //     console.log("Current cities in CA: ", cities.join(", "));
-    // });
-
+    db.collection('randomthing').where("status",">=",1).orderBy('status').orderBy('createAt',"desc")
     .onSnapshot((querySnapshot) => {
         this.todos = [];
         querySnapshot.forEach((doc) => {
@@ -110,10 +102,11 @@ var app = new Vue({
     });
   },
   methods: {
-    addItem: function(){      
+    addItem: function(){
       db.collection("randomthing").add({          
           thething: this.newItem,
-          createAt: db.collection("randomthing").thime
+          status: 1,
+          createAt: new Date()
       })
       .then(function(docRef) {
           this.inputSuccess = "Document written with ID: ", docRef.id
