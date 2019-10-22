@@ -6,27 +6,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<title>Firestore To-Do-List</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css" integrity="sha256-BJ/G+e+y7bQdrYkS2RBTyNfBHpA9IuGaPmf9htub5MQ=" crossorigin="anonymous" />
 </head>
 <body>
 <div id="app">
-  <div class="container mt-100">
-    
+  <div class="container">
+
+    <div class="row mt-5">
+      <div class="col-md-12">
+          <div class="input-group mb-3">            
+            <input type="text" class="form-control" placeholder="What would you do?" name="txaRandomThinkInput" v-model="newItem">
+            <div class="input-group-append">
+              <button class="btn btn-primary" type="button" v-on:click="addItem">
+                <span class="iconic" data-glyph="star" title="star" aria-hidden="true"></span>
+              Add</button>
+            </div>
+          </div>
+      </div>
+    </div>
+
     <div class="row">
       <div class="col-md-12">
-        
-          <div class="form-inline form-group">            
-            <input type="text" class="form-control" name="txaRandomThinkInput" v-model="newItem" />
-            <button class="btn btn-primary" v-on:click="addItem">Add</button>
-          </div>
-          <p>{{inputSuccess}}</p>
+        <div class="card-deck">
+          <todo-card v-for="(item, index) in todos" :key="index" v-bind:todo="item"></todo-card>
+        </div>
       </div>
     </div>
   
     <div id="todo">
       <ol>
-        <todo-item v-for="(item,index) in todos" v-bind:todo="item" v-bind:key="index" v-on:click.native="removeItem(index)"></todo-item>
+        <!-- <todo-item v-for="(item, index) in todos" v-bind:todo="item" v-bind:key="index" v-on:click.native="removeItem(index)"></todo-item> -->
       </ol>  
-    </div>  
+    </div>
+
   </div>
 </div>
 
@@ -76,8 +88,22 @@ var config = {
 var app = firebase.initializeApp(config);
 var db = app.firestore();
 
-Vue.component('todo-item',{
-  template: '<li>{{todo.title}}</li>',
+// Vue.component('todo-item',{
+//   template: '<li>{{todo.title}}</li>',
+//   props: ['todo']
+// });
+
+Vue.component('todo-card',{
+  template: `<div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{{todo.title}}</h5>
+            <p class="card-text"><small class="text-muted"><span class="oi oi-calendar" title="calendar" aria-hidden="true"></span> {{todo.cdate}}</small></p>            
+          </div>
+          <div class="card-footer">
+            <button type="button" class="btn btn-outline-success btn-sm" v-on:click="markAsDone"><span class="oi oi-check"></span></button>
+            <button class="btn btn-outline-secondary btn-sm" v-on:click.native="removeItem(index)"><span class="oi oi-circle-x"></span></button>
+          </div>
+        </div>`,
   props: ['todo']
 });
 
@@ -94,9 +120,17 @@ var app = new Vue({
     .onSnapshot((querySnapshot) => {
         this.todos = [];
         querySnapshot.forEach((doc) => {
+          let fullDate = doc.data().createAt.toDate();
+          let tgl = fullDate.getDate();
+          let bulan = fullDate.getMonth();
+          let tahun = fullDate.getFullYear();
+          let jam = fullDate.getHours();
+          let menit = fullDate.getMinutes();
+          let detik = fullDate.getSeconds();
           this.todos.push({
             'id': [doc.id],
-            'title': doc.data().thething
+            'title': doc.data().thething,
+            'cdate': tgl+"/"+bulan+"/"+tahun+" "+jam+":"+menit+":"+detik
           });
       });
     });
@@ -117,9 +151,15 @@ var app = new Vue({
 
       this.newItem = '';
     },
-    removeItem: function(key){      
-      this.todos.splice(key,1);
+    removeItem: function(key){
+      var confirmDialog = confirm("Cancel this to-do?");
+      if (confirmDialog) {
+        this.todos.splice(key,1);  
+      }
     },
+    markAsDone: function(key){
+      alert("Hai");
+    }
     
   }
 })
