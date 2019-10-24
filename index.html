@@ -17,7 +17,7 @@
           <div class="input-group mb-3">            
             <input type="text" class="form-control" placeholder="What would you do?" name="txaRandomThinkInput" v-model="newItem">
             <div class="input-group-append">
-              <button class="btn btn-primary" type="button" v-on:click="addItem">
+              <button class="btn btn-primary" type="button" v-on:click="doAddItem">
                 <span class="iconic" data-glyph="star" title="star" aria-hidden="true"></span>
               Add</button>
             </div>
@@ -27,16 +27,10 @@
 
     <div class="row">
       <div class="col-md-12">
-        <div class="card-deck">
-          <todo-card v-for="(item, index) in todos" :key="index" v-bind:todo="item"></todo-card>
+        <div class="card-columns">
+          <todo-card v-for="(item, index) in todos" v-bind:key="index" :todo="item" :card-identifier="index" v-on:remove-item="doRemoveTodo"></todo-card>
         </div>
       </div>
-    </div>
-  
-    <div id="todo">
-      <ol>
-        <!-- <todo-item v-for="(item, index) in todos" v-bind:todo="item" v-bind:key="index" v-on:click.native="removeItem(index)"></todo-item> -->
-      </ol>  
     </div>
 
   </div>
@@ -53,7 +47,7 @@
   var intv;
   var c = 100;  
   function myFunction() {
-    intv = setInterval(clearScreen, 5000);
+    intv = setInterval(clearScreen, 500);
   }
   function clearScreen() {
     var o = c/100;
@@ -88,23 +82,40 @@ var config = {
 var app = firebase.initializeApp(config);
 var db = app.firestore();
 
-// Vue.component('todo-item',{
-//   template: '<li>{{todo.title}}</li>',
-//   props: ['todo']
-// });
-
 Vue.component('todo-card',{
-  template: `<div class="card">
-          <div class="card-body">
+  template: `<div class="card">          
+          <div class="card-body">            
             <h5 class="card-title">{{todo.title}}</h5>
-            <p class="card-text"><small class="text-muted"><span class="oi oi-calendar" title="calendar" aria-hidden="true"></span> {{todo.cdate}}</small></p>            
-          </div>
-          <div class="card-footer">
-            <button type="button" class="btn btn-outline-success btn-sm" v-on:click="markAsDone"><span class="oi oi-check"></span></button>
-            <button class="btn btn-outline-secondary btn-sm" v-on:click.native="removeItem(index)"><span class="oi oi-circle-x"></span></button>
+            <h6>
+              <span class="badge badge-pill badge-success" v-if="todo.status == 2"><span class="oi oi-check"></span> Done</span>
+              <span class="badge badge-pill badge-secondary" v-else-if="todo.status == 1">On Progress</span>
+            </h6>
+            <p class="card-text">
+              <small class="text-muted"><span class="oi oi-calendar" title="calendar" aria-hidden="true"></span> {{todo.cdate}}</small>
+            </p>
+            <div v-show="todo.status == 1">
+              <button type="button" class="btn btn-outline-success btn-sm" v-on:click="markAsDone(todo.id)"><span class="oi oi-check"></span></button>
+              <button class="btn btn-outline-secondary btn-sm" v-on:click="removeItem(cardIdentifier)"><span class="oi oi-circle-x"></span></button>
+            </div>            
           </div>
         </div>`,
-  props: ['todo']
+  props: ['todo','card-identifier'],
+  methods:{
+    markAsDone: function(id){
+      return db.collection('randomthing').doc(id).update({
+        status: 2
+      })
+      .then(function(){
+        alert("Task marked as done!");
+      })
+      .catch(function(error){
+        console.log(error);
+      });
+    },
+    removeItem: function(i) {      
+      this.$emit('remove-item', i);
+    }
+  }
 });
 
 var app = new Vue({
@@ -116,7 +127,7 @@ var app = new Vue({
     todos: []
   },
   mounted(){
-    db.collection('randomthing').where("status",">=",1).orderBy('status').orderBy('createAt',"desc")
+    db.collection('randomthing').where("status",">=",1).orderBy('status').orderBy('createAt')
     .onSnapshot((querySnapshot) => {
         this.todos = [];
         querySnapshot.forEach((doc) => {
@@ -128,39 +139,38 @@ var app = new Vue({
           let menit = fullDate.getMinutes();
           let detik = fullDate.getSeconds();
           this.todos.push({
-            'id': [doc.id],
+            'id': doc.id,
             'title': doc.data().thething,
+            'status': doc.data().status,            
             'cdate': tgl+"/"+bulan+"/"+tahun+" "+jam+":"+menit+":"+detik
           });
       });
     });
-  },
+  },  
   methods: {
-    addItem: function(){
-      db.collection("randomthing").add({          
-          thething: this.newItem,
-          status: 1,
-          createAt: new Date()
-      })
-      .then(function(docRef) {
-          this.inputSuccess = "Document written with ID: ", docRef.id
-      })
-      .catch(function(error) {
-          alert("Error adding document: ", error);
-      });
+    doAddItem: function(){
+      if (this.newItem != ''){
+        db.collection("randomthing").add({          
+            thething: this.newItem,
+            status: 1,
+            createAt: new Date()
+        })
+        .then(function(docRef) {
+            this.inputSuccess = "Document written with ID: ", docRef.id
+        })
+        .catch(function(error) {
+            alert("Error adding document: ", error);
+        });
 
-      this.newItem = '';
+        this.newItem = '';
+      }      
     },
-    removeItem: function(key){
+    doRemoveTodo: function(arrayIndex){
       var confirmDialog = confirm("Cancel this to-do?");
       if (confirmDialog) {
-        this.todos.splice(key,1);  
+        this.todos.splice(arrayIndex,1);
       }
-    },
-    markAsDone: function(key){
-      alert("Hai");
     }
-    
   }
 })
 </script>
