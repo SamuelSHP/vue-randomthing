@@ -7,12 +7,23 @@
 	<title>Firestore To-Do-List</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css" integrity="sha256-BJ/G+e+y7bQdrYkS2RBTyNfBHpA9IuGaPmf9htub5MQ=" crossorigin="anonymous" />
+
+  <style type="text/css">
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity 1s;
+    }
+    .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+      opacity: 0;      
+    }
+  </style>
+
 </head>
 <body>
 <div id="app">
   <div class="container">
-
-    <div class="row mt-5">
+    
+    <!-- Text field input todo -->
+    <div class="row mt-1">
       <div class="col-md-12">
           <div class="input-group mb-3">            
             <input type="text" class="form-control" placeholder="What would you do?" name="txaRandomThinkInput" v-model="newItem">
@@ -25,10 +36,11 @@
       </div>
     </div>
 
+    <!-- TOdo List -->
     <div class="row">
       <div class="col-md-12">
         <div class="card-columns">
-          <todo-card v-for="(item, index) in todos" v-bind:key="index" :todo="item" :card-identifier="index" v-on:remove-item="doRemoveTodo"></todo-card>
+            <todo-card v-for="(item, index) in todos" v-bind:key="index" :todo="item" :cardidentifier="index"></todo-card>          
         </div>
       </div>
     </div>
@@ -43,27 +55,6 @@
  <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
 <script src="https://www.gstatic.com/firebasejs/5.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/5.11.0/firebase-firestore.js"></script>
-<!-- <script type="text/javascript">
-  var intv;
-  var c = 100;  
-  function myFunction() {
-    intv = setInterval(clearScreen, 500);
-  }
-  function clearScreen() {
-    var o = c/100;
-    $("#app").css('opacity', o);
-    c--;
-    if (c < 0) { 
-      alert("Pay first, use later :)");     
-      c = 100;
-      reset();
-    }
-  }
-  function reset(){    
-    $("input,select").val('');
-  }
-  myFunction(c);
-</script> -->
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
 <script type="text/javascript">
@@ -82,52 +73,82 @@ var config = {
 var app = firebase.initializeApp(config);
 var db = app.firestore();
 
+// Vue.component('transcard',{
+//   template: `<transition name="fade"><p>Judul</p></transition>`
+// });
+
 Vue.component('todo-card',{
-  template: `<div class="card">          
+  template: `<transition-group name="fade">
+        <div class="card" :key="todo.cdate" style="min-width: 12em;">
           <div class="card-body">            
             <h5 class="card-title">{{todo.title}}</h5>
             <h6>
               <span class="badge badge-pill badge-success" v-if="todo.status == 2"><span class="oi oi-check"></span> Done</span>
               <span class="badge badge-pill badge-secondary" v-else-if="todo.status == 1">On Progress</span>
+              <span class="badge badge-pill badge-danger" v-else-if="todo.status == -1">Canceled</span>
             </h6>
             <p class="card-text">
               <small class="text-muted"><span class="oi oi-calendar" title="calendar" aria-hidden="true"></span> {{todo.cdate}}</small>
             </p>
             <div v-show="todo.status == 1">
               <button type="button" class="btn btn-outline-success btn-sm" v-on:click="markAsDone(todo.id)"><span class="oi oi-check"></span></button>
-              <button class="btn btn-outline-secondary btn-sm" v-on:click="removeItem(cardIdentifier)"><span class="oi oi-circle-x"></span></button>
+              <button class="btn btn-outline-secondary btn-sm" v-on:click="removeItem(todo.id)"><span class="oi oi-circle-x"></span></button>
             </div>            
           </div>
-        </div>`,
-  props: ['todo','card-identifier'],
+        </div></transition-group>`,
+  props: ['todo','cardidentifier'],
+  data: function(){
+    return {
+      show: true
+    }
+  },
   methods:{
     markAsDone: function(id){
-      return db.collection('randomthing').doc(id).update({
-        status: 2
-      })
-      .then(function(){
-        alert("Task marked as done!");
-      })
-      .catch(function(error){
-        console.log(error);
-      });
+      let confirmDialog = confirm("Mark this task as done?");
+      
+      if (confirmDialog) {
+        this.show = false;
+        return db.collection('randomthing').doc(id).update({
+          status: 2
+        })
+        .then()
+        .catch(function(error){
+          console.log(error);
+        });
+      }
     },
-    removeItem: function(i) {      
-      this.$emit('remove-item', i);
+    removeItem: function(id) {
+      // this.$emit('remove-item', i);
+      var confirmDialog = confirm("Cancel this to-do?");
+      if (confirmDialog) {
+        // this.show = false;
+        return db.collection('randomthing').doc(id).update({
+          status: -1
+        })
+        .then()
+        .catch(function(error){
+          console.log(error);
+        });
+        // this.todos.splice(arrayIndex,1);
+      }      
+    },
+    cancelDone: function() {
     }
   }
 });
 
 var app = new Vue({
   el: '#app',
-  data: {
-    listID: 0,
-    newItem: '',
-    inputSuccess: '',
-    todos: []
+  data: function(){
+    return {   
+      listID: 0,
+      newItem: '',
+      inputSuccess: '',
+      todos: []
+    }
   },
   mounted(){
-    db.collection('randomthing').where("status",">=",1).orderBy('status').orderBy('createAt')
+    db.collection('randomthing').orderBy('createAt','desc')
     .onSnapshot((querySnapshot) => {
         this.todos = [];
         querySnapshot.forEach((doc) => {
@@ -166,12 +187,10 @@ var app = new Vue({
       }      
     },
     doRemoveTodo: function(arrayIndex){
-      var confirmDialog = confirm("Cancel this to-do?");
-      if (confirmDialog) {
-        this.todos.splice(arrayIndex,1);
-      }
+      
     }
   }
 })
 </script>
+
 </html>
